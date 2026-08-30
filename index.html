@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L-아르기닌(L-Arginine) 관세청 3대 무역통계 통합 분석 대시보드 (2020~2026)</title>
+  <meta name="description" content="관세청 품목별 국가별, 국가별 총실적, 시군구별 품목별 3대 OpenAPI를 통합한 L-아르기닌 수출입 및 지역별·월별(MoM, YoY) 심층 분석 대시보드">
+  
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="brand-section">
+        <div class="brand-icon">🔬</div>
+        <div class="brand-info">
+          <h1>
+            L-아르기닌 무역 & 지역별 글로벌 수출 분석 대시보드
+            <span class="badge" style="background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.4);">2020~2026 최신 통관 연동</span>
+          </h1>
+          <p>관세청 3대 OpenAPI(품목별·국가별 / 국가별 총무역 / 시군구별 품목별) 통합 분석 시스템 (전월비·전년비 & 월별 기간 선택 지원)</p>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <!-- 3-API Status Badges -->
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <div class="api-status-badge" title="관세청_품목별 국가별 수출입실적 API">
+            <span class="pulse-dot"></span> 품목·국가별 (2020~2026)
+          </div>
+          <div class="api-status-badge" style="background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.3); color: var(--accent-blue);" title="관세청_국가별 수출입실적(GW) API">
+            <span class="pulse-dot" style="background: var(--accent-blue); box-shadow: 0 0 8px var(--accent-blue);"></span> 국가총실적 API
+          </div>
+          <div class="api-status-badge" style="background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.3); color: var(--accent-violet);" title="관세청_시군구별 품목별 수출입실적">
+            <span class="pulse-dot" style="background: var(--accent-violet); box-shadow: 0 0 8px var(--accent-violet);"></span> 시군구·월별 API
+          </div>
+        </div>
+        
+        <button class="btn" id="currencyToggle" title="통화 변환 (USD / KRW)">
+          $ USD
+        </button>
+
+        <button class="btn" id="themeToggle" title="다크/라이트 모드 전환">
+          🌙 다크 모드
+        </button>
+
+        <button class="btn btn-primary" id="btnOpenApiModal">
+          ⚙️ API 설정
+        </button>
+      </div>
+    </header>
+
+    <!-- Filter & Control Bar -->
+    <section class="control-bar">
+      <div class="control-row">
+        <!-- HS Code Selector -->
+        <div class="filter-group">
+          <span class="filter-label">📦 분석 품목 (HS Code):</span>
+          <div class="pill-group">
+            <button class="pill-btn preset-hs-btn active" data-hs="292529">2925.29 (L-아르기닌)</button>
+            <button class="pill-btn preset-hs-btn" data-hs="292249">2922.49 (기타 아미노산)</button>
+            <button class="pill-btn preset-hs-btn" data-hs="292241">2922.41 (라이신)</button>
+            <button class="pill-btn preset-hs-btn" data-hs="210690">2106.90 (건기식 제제)</button>
+          </div>
+          
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="customHsInput" class="search-input" placeholder="HS코드 직접 입력" maxlength="10">
+          </div>
+          <button class="btn" id="btnApplyHs" style="padding: 6px 12px; font-size: 0.8125rem;">조회</button>
+        </div>
+
+        <!-- Period & Month Range Filter (시작월 ~ 종료월) -->
+        <div class="filter-group">
+          <span class="filter-label">📅 연도:</span>
+          <select id="yearSelect" class="select-custom">
+            <option value="ALL">전체 연도 (2020 ~ 2026)</option>
+            <option value="2026">2026년 (최신 통관)</option>
+            <option value="2025">2025년</option>
+            <option value="2024" selected>2024년</option>
+            <option value="2023">2023년</option>
+            <option value="2022">2022년</option>
+            <option value="2021">2021년</option>
+            <option value="2020">2020년</option>
+          </select>
+
+          <!-- Start Month & End Month Range Selector -->
+          <div style="display: flex; align-items: center; gap: 4px; background: var(--bg-input); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <span class="filter-label" style="font-size: 0.8rem; color: var(--accent-cyan);">🗓️ 월 범위:</span>
+            <select id="startMonthSelect" class="select-custom" style="padding: 4px 6px; font-size: 0.8125rem;">
+              <option value="1" selected>1월</option>
+              <option value="2">2월</option>
+              <option value="3">3월</option>
+              <option value="4">4월</option>
+              <option value="5">5월</option>
+              <option value="6">6월</option>
+              <option value="7">7월</option>
+              <option value="8">8월</option>
+              <option value="9">9월</option>
+              <option value="10">10월</option>
+              <option value="11">11월</option>
+              <option value="12">12월</option>
+            </select>
+            <span style="color: var(--text-muted); font-size: 0.8rem;">~</span>
+            <select id="endMonthSelect" class="select-custom" style="padding: 4px 6px; font-size: 0.8125rem;">
+              <option value="1">1월</option>
+              <option value="2">2월</option>
+              <option value="3">3월</option>
+              <option value="4">4월</option>
+              <option value="5">5월</option>
+              <option value="6">6월</option>
+              <option value="7">7월</option>
+              <option value="8">8월</option>
+              <option value="9">9월</option>
+              <option value="10">10월</option>
+              <option value="11">11월</option>
+              <option value="12" selected>12월</option>
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 6px; margin-left: 4px;">
+            <span class="filter-label" style="font-size: 0.75rem;">환율:</span>
+            <input type="number" id="exchangeRateInput" class="search-input" style="width: 76px; padding-left: 8px;" value="1380" step="10">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">원/$</span>
+          </div>
+
+          <button class="btn" id="btnRefreshData" title="데이터 새로고침">
+            🔄 새로고침
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Selected Target Meta Info -->
+      <div class="meta-stats-bar">
+        <div>
+          <span class="target-item-badge">
+            <span id="targetHsCode">292529</span> | <strong id="targetHsName">L-아르기닌 및 그 염류 / 이민 화합물</strong>
+            <span id="selectedPeriodTag" style="margin-left: 8px; background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">2024년 1월 ~ 12월</span>
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="loading-indicator" id="loadingIndicator">
+            <span class="spin-icon">⏳</span> 실시간 데이터 수신 중...
+          </span>
+          <button class="btn" id="btnExportCsv" style="padding: 4px 10px; font-size: 0.75rem;">
+            📥 CSV 다운로드
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Executive KPI Summary Cards -->
+    <section class="kpi-grid">
+      <!-- 1. Export Total -->
+      <div class="kpi-card export-card">
+        <div class="kpi-header">
+          <span class="kpi-title">선택 기간 총 수출액 (Export)</span>
+          <div class="kpi-icon-wrap">🚢</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiExportVal">-</span>
+        </div>
+        <div class="kpi-footer">
+          <span>전년 동기 대비 성장률</span>
+          <span class="trend-badge up" id="kpiExportYoY">-</span>
+        </div>
+      </div>
+
+      <!-- 2. Import Total -->
+      <div class="kpi-card import-card">
+        <div class="kpi-header">
+          <span class="kpi-title">선택 기간 총 수입액 (Import)</span>
+          <div class="kpi-icon-wrap">🛃</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiImportVal">-</span>
+        </div>
+        <div class="kpi-footer">
+          <span>전년 동기 대비 증감률</span>
+          <span class="trend-badge down" id="kpiImportYoY">-</span>
+        </div>
+      </div>
+
+      <!-- 3. Trade Balance -->
+      <div class="kpi-card balance-card">
+        <div class="kpi-header">
+          <span class="kpi-title">무역수지 (Trade Balance)</span>
+          <div class="kpi-icon-wrap">⚖️</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiBalanceVal">-</span>
+        </div>
+        <div class="kpi-footer">
+          <span>수지 상태</span>
+          <span class="trend-badge up" id="kpiBalanceBadge">-</span>
+        </div>
+      </div>
+
+      <!-- 4. Export Unit Price -->
+      <div class="kpi-card unitprice-card">
+        <div class="kpi-header">
+          <span class="kpi-title">수출 평균단가 ($/kg)</span>
+          <div class="kpi-icon-wrap">💲</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiExpPriceVal">-</span>
+        </div>
+        <div class="kpi-footer">
+          <span id="kpiSpreadVal">단가 마진: -</span>
+          <span style="color: var(--text-muted);" id="kpiImpPriceVal">수입: -</span>
+        </div>
+      </div>
+
+      <!-- 5. Total Trade Volume -->
+      <div class="kpi-card volume-card">
+        <div class="kpi-header">
+          <span class="kpi-title">총 교역 중량 (Volume)</span>
+          <div class="kpi-icon-wrap">📦</div>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-value" id="kpiTotalWgtVal">-</span>
+        </div>
+        <div class="kpi-footer">
+          <span>수출입 합산 물동량</span>
+          <span style="color: var(--accent-cyan); font-weight: 600;">실거래 통관 기준</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" data-target="tab-overview">
+        📊 종합 대시보드
+      </button>
+      <button class="tab-btn" data-target="tab-regional" style="color: var(--accent-cyan); font-weight: 700; background: rgba(6, 182, 212, 0.08); border-radius: 6px 6px 0 0;">
+        🗺️ 국내 시군구별 & 월별 해외 대상국 분석
+      </button>
+      <button class="tab-btn" data-target="tab-timeseries">
+        📈 연도별·월별 시계열 & MoM/YoY 증감률
+      </button>
+      <button class="tab-btn" data-target="tab-unitprice" style="color: var(--accent-amber); font-weight: 700;">
+        ⚖️ 단가 & 부가가치 마진 분석
+      </button>
+      <button class="tab-btn" data-target="tab-countries">
+        🌍 글로벌 교역국 분석
+      </button>
+      <button class="tab-btn" data-target="tab-seasonality">
+        📅 계절성 & 월별 패턴
+      </button>
+      <button class="tab-btn" data-target="tab-ai-report">
+        🧠 AI 스마트 비즈니스 진단
+      </button>
+      <button class="tab-btn" data-target="tab-data">
+        📋 전체 원본 데이터
+      </button>
+    </nav>
+
+    <!-- =========================================================
+         TAB 1: Overview
+         ========================================================= -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="chart-grid">
+        <div class="chart-card col-8">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>📈 연도별 수출입 실적 및 무역수지 추이 (2020~2026)</h3>
+              <p class="chart-subtitle">연도별 수출액(청색), 수입액(적색) 및 순 무역수지(녹색 꺾은선)</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartMainTrend"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-4">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>🌍 주요 수출국 점유율 비중</h3>
+              <p class="chart-subtitle">선택 기간 수출액 대비 국가별 비중 (%)</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartCountryShare"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-6">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>📅 월별 수출입 상세 추이 (전월비·전년동월비 증감 포함)</h3>
+              <p class="chart-subtitle">마우스를 올리면 전월비(MoM %)와 전년동월비(YoY %) 증감률이 표시됩니다.</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartMonthlyDetail"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-6">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>💲 수출입 단가 및 스프레드 ($/kg)</h3>
+              <p class="chart-subtitle">수출 단가와 수입 단가 간 격차 (마진 구조)</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartUnitPrice"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 14px;">💡 핵심 비즈니스 인사이트 요약</h3>
+      <div class="ai-summary-container" id="aiInsightList"></div>
+    </div>
+
+    <!-- =========================================================
+         TAB 2: REGIONAL & DESTINATION ANALYSIS
+         ========================================================= -->
+    <div class="tab-pane" id="tab-regional">
+      <!-- Regional Control Bar with Year and Start/End Month Filters -->
+      <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          
+          <!-- Sigungu Selector -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="filter-label" style="color: var(--accent-cyan); font-size: 0.85rem;">📍 국내 시군구:</span>
+            <select id="sigunguSelect" class="select-custom" style="font-weight: 600; min-width: 240px;">
+              <option value="ALL">전국 시군구 전체 종합 (Total)</option>
+              <option value="43110" selected>충청북도 청주시 (오송·오창 바이오밸리 - 1위 38%)</option>
+              <option value="41590">경기도 화성시 (바이오·제약 클러스터 - 24%)</option>
+              <option value="45130">전북특별자치도 군산시 (발효·생물소재 국가산단 - 16%)</option>
+              <option value="28185">인천광역시 연수구 (송도 바이오클러스터 - 11%)</option>
+              <option value="11680">서울특별시 강남구 (무역상사·헬스케어 본사 - 7%)</option>
+              <option value="44130">충청남도 천안시 (정밀화학·바이오 산단 - 4%)</option>
+            </select>
+          </div>
+
+          <!-- Regional Year Selector -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="filter-label" style="font-size: 0.85rem;">📅 연도:</span>
+            <select id="regYearSelect" class="select-custom">
+              <option value="ALL">전체 연도 (2020~2026)</option>
+              <option value="2026">2026년 (최신)</option>
+              <option value="2025">2025년</option>
+              <option value="2024" selected>2024년</option>
+              <option value="2023">2023년</option>
+              <option value="2022">2022년</option>
+              <option value="2021">2021년</option>
+              <option value="2020">2020년</option>
+            </select>
+          </div>
+
+          <!-- Regional Start & End Month Range Selector -->
+          <div style="display: flex; align-items: center; gap: 4px; background: var(--bg-input); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.4);">
+            <span class="filter-label" style="font-size: 0.8rem; color: var(--accent-emerald);">🗓️ 기간 선택:</span>
+            <select id="regStartMonthSelect" class="select-custom" style="padding: 4px 6px; font-size: 0.8125rem;">
+              <option value="1" selected>1월</option>
+              <option value="2">2월</option>
+              <option value="3">3월</option>
+              <option value="4">4월</option>
+              <option value="5">5월</option>
+              <option value="6">6월</option>
+              <option value="7">7월</option>
+              <option value="8">8월</option>
+              <option value="9">9월</option>
+              <option value="10">10월</option>
+              <option value="11">11월</option>
+              <option value="12">12월</option>
+            </select>
+            <span style="color: var(--text-muted); font-size: 0.8rem;">~</span>
+            <select id="regEndMonthSelect" class="select-custom" style="padding: 4px 6px; font-size: 0.8125rem;">
+              <option value="1">1월</option>
+              <option value="2">2월</option>
+              <option value="3">3월</option>
+              <option value="4">4월</option>
+              <option value="5">5월</option>
+              <option value="6">6월</option>
+              <option value="7">7월</option>
+              <option value="8">8월</option>
+              <option value="9">9월</option>
+              <option value="10">10월</option>
+              <option value="11">11월</option>
+              <option value="12" selected>12월</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div style="font-size: 0.8125rem; color: var(--text-secondary);" id="selectedRegionHubDesc">
+          🏭 <strong>충청북도 청주시</strong>: 국내 최대 바이오의약품·발효아미노산 생산거점
+        </div>
+      </div>
+
+      <!-- Regional KPI Cards -->
+      <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 20px;">
+        <div class="kpi-card" style="--card-accent: var(--accent-cyan);">
+          <div class="kpi-header">
+            <span class="kpi-title" id="regKpiExpTitle">선택 기간 L-아르기닌 수출액</span>
+            <div class="kpi-icon-wrap">🚀</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="regKpiExpVal">-</span>
+          </div>
+          <div class="kpi-footer">
+            <span>선택 기간 전국 기여도</span>
+            <span class="trend-badge up" id="regKpiShareVal">-</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" style="--card-accent: var(--accent-emerald);">
+          <div class="kpi-header">
+            <span class="kpi-title">최대 수출 대상국 (1위)</span>
+            <div class="kpi-icon-wrap">🌐</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="regKpiTopDestVal">-</span>
+          </div>
+          <div class="kpi-footer">
+            <span>해당 국가 수출 비중</span>
+            <span class="trend-badge up" id="regKpiTopDestShare">-</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" style="--card-accent: var(--accent-amber);">
+          <div class="kpi-header">
+            <span class="kpi-title">선택 기간 평균 수출단가</span>
+            <div class="kpi-icon-wrap">💲</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="regKpiExpPriceVal">-</span>
+          </div>
+          <div class="kpi-footer">
+            <span>단가 경쟁력</span>
+            <span style="color: var(--accent-cyan); font-weight: 600;">$/kg 기준</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" style="--card-accent: var(--accent-rose);">
+          <div class="kpi-header">
+            <span class="kpi-title">선택 기간 원자재 수입액</span>
+            <div class="kpi-icon-wrap">🛃</div>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="regKpiImpVal">-</span>
+          </div>
+          <div class="kpi-footer">
+            <span>원료 수입 거점</span>
+            <span style="color: var(--text-muted);">통관지 기준</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regional Charts Grid -->
+      <div class="chart-grid">
+        <!-- 1. Destination Country Breakdown Chart -->
+        <div class="chart-card col-6">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3 id="regionDestinationTitle">🚢 충청북도 청주시 발 해외 수출 대상국 순위</h3>
+              <p class="chart-subtitle">선택 기간 해당 시군구에서 어느 국가로 얼마나 수출되었는지 분석 ($M)</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartRegionDestination"></canvas>
+          </div>
+        </div>
+
+        <!-- 2. Regional 12-Month Trend Chart -->
+        <div class="chart-card col-6">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3 id="regionMonthlyChartTitle">📅 [충청북도 청주시] 1월~12월 월별 수출입 추이</h3>
+              <p class="chart-subtitle">선택 지역의 1월~12월 월별 수출액(청색), 수입액(적색) 및 전월비(MoM %)</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartRegionMonthly"></canvas>
+          </div>
+        </div>
+
+        <!-- 3. National Regional Share Bar Chart -->
+        <div class="chart-card col-12">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>🏭 전국 주요 시군구별 L-아르기닌 수출 순위 및 비중 비교</h3>
+              <p class="chart-subtitle">선택 기간 국내 주요 바이오·의약품 산단별 수출 기여도 ($M)</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartRegionalRanking"></canvas>
+          </div>
+        </div>
+
+        <!-- 4. Regional Destination Matrix Table -->
+        <div class="chart-card col-12">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3 id="regionTableTitle">📋 [충청북도 청주시] 세부 수출 대상국 통관 실적 매트릭스</h3>
+              <p class="chart-subtitle">수출 대상국별 수출금액, 수출 비중, 수출중량, 수입금액, 무역수지 및 평균 수출단가</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>순위</th>
+                  <th>수출 대상국</th>
+                  <th class="table-num">수출금액</th>
+                  <th class="table-num">수출 비중 (%)</th>
+                  <th class="table-num">수출중량</th>
+                  <th class="table-num">수입금액</th>
+                  <th class="table-num">무역수지</th>
+                  <th class="table-num">평균 수출단가</th>
+                </tr>
+              </thead>
+              <tbody id="regionDestinationTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 3: Time Series & MoM/YoY Table
+         ========================================================= -->
+    <div class="tab-pane" id="tab-timeseries">
+      <div class="chart-grid">
+        <div class="chart-card col-12">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>📈 2020 ~ 2026 월별 수출입 실적 및 전월비(MoM) / 전년동월비(YoY) 증감률 분석표</h3>
+              <p class="chart-subtitle">월별 수출입 금액과 함께 전월 대비(MoM %) 및 전년 동월 대비(YoY %) 증가율을 정밀 비교합니다.</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>연월</th>
+                  <th class="table-num">수출액</th>
+                  <th class="table-num">수출 전월비 (MoM)</th>
+                  <th class="table-num">수출 전년비 (YoY)</th>
+                  <th class="table-num">수입액</th>
+                  <th class="table-num">수입 전월비 (MoM)</th>
+                  <th class="table-num">수입 전년비 (YoY)</th>
+                  <th class="table-num">무역수지</th>
+                  <th class="table-num">수출단가</th>
+                </tr>
+              </thead>
+              <tbody id="momYoyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 4: Unit Price & Value-Added Margin Analysis (화면 개선 완료)
+         ========================================================= -->
+    <div class="tab-pane" id="tab-unitprice">
+      <div class="chart-grid">
+        <!-- 1. Dedicated Large Unit Price Trend Chart -->
+        <div class="chart-card col-8">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>⚖️ 월별 수출입 평균단가 ($/kg) 및 부가가치 마진 스프레드 추이</h3>
+              <p class="chart-subtitle">수출 단가(청색 꺾은선) vs 수입 단가(적색 꺾은선) 및 부가가치 스프레드 마진(녹색/적색 바)</p>
+            </div>
+          </div>
+          <div class="chart-container tall">
+            <canvas id="chartUnitPriceDetail"></canvas>
+          </div>
+        </div>
+
+        <!-- 2. High Value Export Destinations Chart -->
+        <div class="chart-card col-4">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>💎 주요 수출국별 평균 수출단가 랭킹 ($/kg)</h3>
+              <p class="chart-subtitle">어느 국가에 고부가가치/고순도로 수출되고 있는지 비교</p>
+            </div>
+          </div>
+          <div class="chart-container tall">
+            <canvas id="chartCountryMargin"></canvas>
+          </div>
+        </div>
+
+        <!-- 3. Unit Price & Margin Analysis Table -->
+        <div class="chart-card col-12">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>📋 기간별 단가 구조 및 부가가치 마진 매트릭스 분석표</h3>
+              <p class="chart-subtitle">월별 수출단가, 수입단가, 단가 마진 스프레드, 부가가치율 (%)</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>연월</th>
+                  <th class="table-num">수출액</th>
+                  <th class="table-num">수출중량</th>
+                  <th class="table-num" style="color:var(--export-color);font-weight:700;">수출 평균단가 ($/kg)</th>
+                  <th class="table-num">수입액</th>
+                  <th class="table-num">수입중량</th>
+                  <th class="table-num" style="color:var(--import-color);font-weight:700;">수입 평균단가 ($/kg)</th>
+                  <th class="table-num" style="font-weight:700;">단가 스프레드 (마진)</th>
+                  <th class="table-num">부가가치 마진 상태</th>
+                </tr>
+              </thead>
+              <tbody id="unitPriceTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 5: Global Partners
+         ========================================================= -->
+    <div class="tab-pane" id="tab-countries">
+      <div class="chart-grid">
+        <div class="chart-card col-6">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>🚢 Top 8 주요 수출 대상국</h3>
+              <p class="chart-subtitle">선택 기간 수출 실적 상위 국가 랭킹</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartTopExportCountries"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-6">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>🛃 Top 8 주요 수입 공급국</h3>
+              <p class="chart-subtitle">선택 기간 원자재 수입 상위 국가 랭킹</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartTopImportCountries"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-12">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>🌐 국가별 세부 교역 실적 매트릭스</h3>
+              <p class="chart-subtitle">수출액, 수입액, 무역수지 및 평균 수출단가 비교</p>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>순위</th>
+                  <th>국가명</th>
+                  <th class="table-num">수출액</th>
+                  <th class="table-num">수출중량</th>
+                  <th class="table-num">수입액</th>
+                  <th class="table-num">수입중량</th>
+                  <th class="table-num">무역수지</th>
+                  <th class="table-num">평균 수출단가</th>
+                </tr>
+              </thead>
+              <tbody id="countryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 6: Seasonality
+         ========================================================= -->
+    <div class="tab-pane" id="tab-seasonality">
+      <div class="chart-grid">
+        <div class="chart-card col-8">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>📅 12개월 계절성 수요 패턴 (Radar Index)</h3>
+              <p class="chart-subtitle">연평균 월별 수출입 집중도 패턴 (원자재 발주 및 제품 수출 최적 시기 도출)</p>
+            </div>
+          </div>
+          <div class="chart-container tall">
+            <canvas id="chartSeasonality"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card col-4">
+          <div class="chart-card-header">
+            <div class="chart-title-area">
+              <h3>💡 계절성 활용 전략</h3>
+            </div>
+          </div>
+          <div style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; display: flex; flex-direction: column; gap: 14px;">
+            <div style="background: var(--bg-input); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+              <strong style="color: var(--accent-cyan); display: block; margin-bottom: 4px;">☀️ 피트니스 및 여름 성수기 (5~7월)</strong>
+              L-아르기닌 등 에너지·헬스케어 보충제 수요가 여름 시즌을 앞두고 급증하는 경향이 있습니다.
+            </div>
+            <div style="background: var(--bg-input); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+              <strong style="color: var(--accent-emerald); display: block; margin-bottom: 4px;">📦 원자재 사전 발주 (1~3월)</strong>
+              성수기 전 원료 재고 확보를 위한 원자재 수입 물동량이 1분기에 증가하므로, 단가 협상에 적합합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         TAB 7: AI Strategy Report
+         ========================================================= -->
+    <div class="tab-pane" id="tab-ai-report">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 16px;">🧠 실시간 통계 기반 AI 비즈니스 진단 보고서</h3>
+      <div class="ai-summary-container" id="aiReportList"></div>
+    </div>
+
+    <!-- =========================================================
+         TAB 8: Raw Data Explorer
+         ========================================================= -->
+    <div class="tab-pane" id="tab-data">
+      <div class="chart-card col-12">
+        <div class="chart-card-header">
+          <div class="chart-title-area">
+            <h3>📋 관세청 공식 통관 원본 데이터 탐색기</h3>
+            <p class="chart-subtitle" id="tableRecordCount">총 0 건</p>
+          </div>
+          
+          <div class="chart-actions">
+            <input type="text" id="tableSearchInput" class="search-input" placeholder="국가명, 연월 검색..." style="width: 200px;">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-field="yearMonth">연월 ⬍</th>
+                <th class="sortable" data-field="hsCd">HS Code ⬍</th>
+                <th class="sortable" data-field="countryName">국가명 ⬍</th>
+                <th class="sortable table-num" data-field="expDlr">수출액 ($) ⬍</th>
+                <th class="sortable table-num" data-field="expWgt">수출중량 (kg) ⬍</th>
+                <th class="sortable table-num" data-field="impDlr">수입액 ($) ⬍</th>
+                <th class="sortable table-num" data-field="impWgt">수입중량 (kg) ⬍</th>
+                <th class="sortable table-num" data-field="balPayments">무역수지 ($) ⬍</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;" id="tablePagination"></div>
+      </div>
+    </div>
+
+  </div> <!-- /app-container -->
+
+  <!-- API Key Setting Modal -->
+  <div class="modal-backdrop" id="apiModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ 공공데이터포털 관세청 3대 API 연동 설정</h3>
+        <button class="btn btn-icon" id="btnCloseApiModal" style="border:none;background:transparent;font-size:1.2rem;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>공공데이터포털 서비스 인증키 (Service Key)</label>
+          <input type="text" id="apiKeyInput" class="form-input" placeholder="Encoding 또는 Decoding 키를 입력하세요">
+          <span style="font-size: 0.75rem; color: var(--text-muted);">
+            * data.go.kr에서 발급받은 서비스 인증키입니다.
+          </span>
+        </div>
+        <div class="form-group">
+          <label>연동되는 관세청 3대 OpenAPI 엔드포인트</label>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); background: var(--bg-input); padding: 10px; border-radius: var(--radius-sm); line-height: 1.6;">
+            1. <strong>품목별 국가별 수출입실적</strong>: <code>apis.data.go.kr/1220000/nitemtrade</code> (2020~2026 연동 완료)<br>
+            2. <strong>국가별 수출입실적(GW)</strong>: <code>apis.data.go.kr/1220000/nationtrade</code><br>
+            3. <strong>시군구별 품목별 수출입실적</strong>: <code>apis.data.go.kr/1220000/sigunguitemtrade</code>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnSaveApiKey">저장 및 실시간 조회 적용</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/default-data.js"></script>
+  <script src="js/regional-data.js"></script>
+  <script src="js/api-client.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
